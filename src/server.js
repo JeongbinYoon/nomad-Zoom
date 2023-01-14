@@ -17,15 +17,31 @@ const server = http.createServer(app);
 // WebSocket Server
 const wss = new WebSocket.Server({ server });
 
+const sockets = [];
+
 wss.on("connection", (socket) => {
+  sockets.push(socket);
+  socket["nickname"] = "Anonymous";
   console.log("Connected to Browser ✅");
-  socket.on("message", (message) => {
-    console.log(message.toString("utf8"));
+
+  socket.on("message", (msg) => {
+    const message = JSON.parse(msg);
+    console.log(message);
+    switch (message.type) {
+      case "new_message":
+        sockets.forEach((aSocket) => {
+          aSocket.send(`${socket.nickname}: ${message.payload}`);
+        });
+        break;
+      case "nickname":
+        socket["nickname"] = message.payload;
+        break;
+    }
   });
+
   socket.on("close", () => {
     console.log("Disconnected to Browser ❌");
   });
-  socket.send("hello!");
 });
 
 server.listen(3000, handleListen);
